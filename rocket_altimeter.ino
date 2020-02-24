@@ -8,6 +8,7 @@
 
 #define SD_CHIP_SELECT 4
 #define BUFFER_SIZE 80
+#define LOG_FILE "data.log"
 
 char data[BUFFER_SIZE];
 
@@ -40,10 +41,16 @@ void setupMPU6050() {
 
 void setupSDcard() {
     Serial.print("Initializing SD card");
+    
     if (!SD.begin(SD_CHIP_SELECT)) {
         Serial.println("Card failed, or not present");
         return;
     }
+    
+    if (SD.exists(LOG_FILE) && !SD.remove(LOG_FILE)) {
+        Serial.println("Warning, failed to delete existing log");
+    }
+    
     Serial.println("SD card initialized.");
 }
 
@@ -75,7 +82,7 @@ void loop() {
     
     delay(500);
     
-    File file = SD.open("data.log", FILE_WRITE);
+    File file = SD.open(LOG_FILE, FILE_WRITE);
     if (file) {
         file.println(data);
         file.close();
