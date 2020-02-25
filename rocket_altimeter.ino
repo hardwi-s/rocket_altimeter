@@ -11,6 +11,8 @@
 #define LOG_FILE "data.log"
 
 char data[BUFFER_SIZE];
+char altBuffer[20];
+char tempBuffer[10];
 
 MPU6050 MPU6050;
 int16_t ax, ay, az;
@@ -77,7 +79,9 @@ void loop() {
     double absoluteAltitude = MS5611.getAltitude(realPressure);
     double relativeAltitude = MS5611.getAltitude(realPressure, referencePressure);
 
-    snprintf(data, BUFFER_SIZE, "%lu,%f,%f,%ld,%d", timer, absoluteAltitude, temp, realPressure, ax);
+    dtostrf(relativeAltitude, 10, 1, altBuffer);
+    dtostrf(temp, 7, 2, tempBuffer);
+    sprintf(data, "%lu,%s,%s,%ld,%d", timer, altBuffer, tempBuffer, realPressure, ax);
     Serial.println(data);
     
     delay(500);
