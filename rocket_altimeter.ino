@@ -90,11 +90,5 @@ void loop() {
     if (file) {
         file.println(data);
         file.close();
-
-        if (millis() > 10000) {
-            tone(8, 1000);
-        } else {
-            noTone(8);
-        }
     }
 }
