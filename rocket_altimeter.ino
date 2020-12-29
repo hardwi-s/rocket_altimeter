@@ -21,32 +21,50 @@ int16_t gx, gy, gz;
 MS5611 MS5611;
 double referencePressure;
 
-void setupMS5611() {
+/**
+ * Initialise the MS5611
+ * 
+ * @return 1 on success, 0 on failure
+ */
+int setupMS5611() {
     Serial.println("Initializing MS5611 sensor");
     if (!MS5611.begin()) {
         Serial.println("MS5611 init failed");
-        return;
+        return 0;
     }
     Serial.println("MS5611 initialized.");
     
     // Get reference pressure for relative altitude
-    referencePressure = MS5611.readPressure();    
+    referencePressure = MS5611.readPressure();
+    return 1;    
 }
 
-void setupMPU6050() {
+/**
+ * Initialise the MPU6050
+ * 
+ * @return 1 on success, 0 on failure
+ */
+int setupMPU6050() {
     Serial.println("Initializing MPU6050 sensor");
     MPU6050.initialize();
 
     Serial.println("Testing MPU6050 connection...");
-    Serial.println(MPU6050.testConnection() ? "MPU6050 connection successful" : "MPU6050 connection failed");
+    int result = MPU6050.testConnection();
+    Serial.println(result ? "MPU6050 connection successful" : "MPU6050 connection failed");
+    return result;
 }
 
-void setupSDcard() {
-    Serial.print("Initializing SD card");
+/**
+ * Initialise the SD card interface
+ * 
+ * @return 1 on success, 0 on failure
+ */
+int setupSDcard() {
+    Serial.println("Initializing SD card");
     
     if (!SD.begin(SD_CHIP_SELECT)) {
         Serial.println("Card failed, or not present");
-        return;
+        return 0;
     }
     
     if (SD.exists(LOG_FILE) && !SD.remove(LOG_FILE)) {
@@ -54,16 +72,11 @@ void setupSDcard() {
     }
     
     Serial.println("SD card initialized.");
+    return 1;
 }
 
 void setup() {
-    // join I2C bus (I2Cdev library doesn't do this automatically)
-#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
     Wire.begin();
-#elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
-    Fastwire::setup(400, true);
-#endif
-
     Serial.begin(115200);
     setupMS5611();
     setupMPU6050();
@@ -75,20 +88,20 @@ void loop() {
     MPU6050.getAcceleration(&ax, &ay, &az);
     long realPressure = MS5611.readPressure();
     double temp = MS5611.readTemperature();
-    
-    double absoluteAltitude = MS5611.getAltitude(realPressure);
     double relativeAltitude = MS5611.getAltitude(realPressure, referencePressure);
 
     dtostrf(relativeAltitude, 10, 1, altBuffer);
     dtostrf(temp, 7, 2, tempBuffer);
     sprintf(data, "%lu,%s,%s,%ld,%d", timer, altBuffer, tempBuffer, realPressure, ax);
     Serial.println(data);
-    
-    delay(500);
-    
+
     File file = SD.open(LOG_FILE, FILE_WRITE);
     if (file) {
         file.println(data);
         file.close();
+    } else {
+        Serial.println("SD card error");
     }
+
+    //delay(500);
 }
